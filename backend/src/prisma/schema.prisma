@@ -1,0 +1,344 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int                   @id @default(autoincrement())
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @default(now()) @updatedAt
+  deletedAt            DateTime?
+  status               Boolean               @default(true)
+  name                 String
+  email                String                @unique
+  password             String
+  role                 Role                  @default(user)
+  isEmailVerified      Boolean               @default(false)
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean               @default(false)
+  Agent                Agent[]
+  AuditLog             AuditLog[]
+  CloudStorage         CloudStorage[]
+  Database             Database[]
+  NotificationSettings NotificationSettings?
+  Token                Token[]
+}
+
+model Token {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  token       String
+  type        TokenType
+  userId      Int
+  expiresAt   DateTime
+  blacklisted Boolean   @default(false)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Database {
+  id               Int             @id @default(autoincrement())
+  userId           Int
+  name             String
+  type             DatabaseType
+  host             String
+  port             Int
+  username         String
+  password         String
+  database         String
+  connectionString String?
+  sslEnabled       Boolean         @default(false)
+  isActive         Boolean         @default(true)
+  lastTestedAt     DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  agentId          Int?
+  BackupHistory    BackupHistory[]
+  BackupJob        BackupJob[]
+  agent            Agent?          @relation(fields: [agentId], references: [id])
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model BackupJob {
+  id                       Int               @id @default(autoincrement())
+  databaseId               Int
+  name                     String
+  scheduleType             ScheduleType
+  cronExpression           String?
+  isActive                 Boolean           @default(true)
+  storageType              StorageType
+  storagePath              String
+  retentionDays            Int               @default(30)
+  compression              Boolean           @default(true)
+  lastRunAt                DateTime?
+  nextRunAt                DateTime?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  isEncrypted              Boolean           @default(false)
+  encryptionPasswordHash   String?
+  backupType               BackupType        @default(full)
+  lastFullBackupAt         DateTime?
+  lastDifferentialBackupAt DateTime?
+  autoVerifyAfterBackup    Boolean           @default(true)
+  verificationLevel        VerificationLevel @default(BASIC)
+  performTestRestore       Boolean           @default(false)
+  testRestoreSchedule      String?
+  advancedScheduleConfig   String?
+  cloudStorageId           Int?
+  BackupHistory            BackupHistory[]
+  cloudStorage             CloudStorage?     @relation(fields: [cloudStorageId], references: [id])
+  database                 Database          @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+}
+
+model BackupHistory {
+  id                      Int                 @id @default(autoincrement())
+  backupJobId             Int?
+  databaseId              Int
+  status                  BackupStatus
+  fileName                String
+  fileSize                BigInt?
+  filePath                String
+  duration                Int?
+  errorMessage            String?
+  startedAt               DateTime            @default(now())
+  completedAt             DateTime?
+  isEncrypted             Boolean             @default(false)
+  backupType              BackupType          @default(full)
+  baseBackupId            Int?
+  isVerified              Boolean             @default(false)
+  verificationStatus      VerificationStatus?
+  verificationMethod      String?
+  verificationError       String?
+  verificationCompletedAt DateTime?
+  checksumAlgorithm       String?
+  checksumValue           String?
+  testRestoreAttempted    Boolean             @default(false)
+  testRestoreSuccess      Boolean?
+  testRestoreDuration     Int?
+  testRestoreLog          String?
+  encryptionPasswordHash  String?
+  storageKey              String?
+  lastRestoreCompletedAt  DateTime?
+  lastRestoreDuration     Int?
+  lastRestoreError        String?
+  lastRestoreStartedAt    DateTime?
+  lastRestoreStatus       RestoreStatus?
+  backupJob               BackupJob?          @relation(fields: [backupJobId], references: [id])
+  database                Database            @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  restoreHistory          RestoreHistory[]
+
+  @@index([backupType])
+  @@index([baseBackupId])
+  @@index([lastRestoreStatus])
+}
+
+model NotificationSettings {
+  id                  Int      @id @default(autoincrement())
+  userId              Int      @unique
+  emailEnabled        Boolean  @default(true)
+  dailySummaryEnabled Boolean  @default(false)
+  dailySummaryTime    String   @default("09:00")
+  recipientEmail      String?
+  notifyOnSuccess     Boolean  @default(true)
+  notifyOnFailure     Boolean  @default(true)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CloudStorage {
+  id                     Int         @id @default(autoincrement())
+  userId                 Int
+  name                   String
+  storageType            StorageType
+  isActive               Boolean     @default(true)
+  isDefault              Boolean     @default(false)
+  s3Region               String?
+  s3Bucket               String?
+  s3AccessKeyId          String?
+  s3SecretAccessKey      String?
+  s3Endpoint             String?
+  s3EncryptedCredentials String?
+  gdRefreshToken         String?
+  gdFolderId             String?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+  BackupJob              BackupJob[]
+  user                   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Agent {
+  id         Int        @id @default(autoincrement())
+  userId     Int
+  agentId    String     @unique
+  deviceName String
+  hostname   String
+  platform   String
+  version    String
+  status     String     @default("offline")
+  lastSeen   DateTime?
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  databases  Database[]
+
+  @@index([userId])
+  @@index([agentId])
+  @@index([status])
+}
+
+model AuditLog {
+  id           Int         @id @default(autoincrement())
+  userId       Int?
+  action       AuditAction
+  resource     String?
+  resourceId   Int?
+  details      String?
+  ipAddress    String?
+  userAgent    String?
+  status       String      @default("success")
+  errorMessage String?
+  createdAt    DateTime    @default(now())
+  user         User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([resource, resourceId])
+}
+
+model RestoreHistory {
+  id              Int           @id @default(autoincrement())
+  backupHistoryId Int
+  status          RestoreStatus
+  startedAt       DateTime      @default(now())
+  completedAt     DateTime?
+  duration        Int?
+  errorMessage    String?
+  restoredBy      Int?
+  databaseName    String?
+  backupHistory   BackupHistory @relation(fields: [backupHistoryId], references: [id], onDelete: Cascade)
+
+  @@index([backupHistoryId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum TokenType {
+  access
+  refresh
+  resetPassword
+  verifyEmail
+}
+
+enum DatabaseType {
+  postgresql
+  mysql
+  mongodb
+  mssql
+  mariadb
+  sqlite
+}
+
+enum ScheduleType {
+  manual
+  hourly
+  daily
+  weekly
+  monthly
+  custom
+  advanced
+}
+
+enum StorageType {
+  local
+  s3
+  ftp
+  azure
+  google_drive
+}
+
+enum BackupStatus {
+  running
+  success
+  failed
+  cancelled
+}
+
+enum RestoreStatus {
+  running
+  success
+  failed
+}
+
+enum BackupType {
+  full
+  incremental
+  differential
+}
+
+enum VerificationStatus {
+  PENDING
+  PASSED
+  FAILED
+  SKIPPED
+}
+
+enum VerificationLevel {
+  BASIC
+  DATABASE
+  FULL
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  REGISTER
+  PASSWORD_RESET
+  PASSWORD_CHANGE
+  TWO_FACTOR_ENABLE
+  TWO_FACTOR_DISABLE
+  DATABASE_CREATE
+  DATABASE_UPDATE
+  DATABASE_DELETE
+  DATABASE_TEST
+  BACKUP_JOB_CREATE
+  BACKUP_JOB_UPDATE
+  BACKUP_JOB_DELETE
+  BACKUP_JOB_RUN
+  BACKUP_START
+  BACKUP_SUCCESS
+  BACKUP_FAIL
+  BACKUP_DELETE
+  BACKUP_DOWNLOAD
+  BACKUP_RESTORE
+  CLOUD_STORAGE_CREATE
+  CLOUD_STORAGE_UPDATE
+  CLOUD_STORAGE_DELETE
+  CLOUD_STORAGE_TEST
+  NOTIFICATION_UPDATE
+  NOTIFICATION_TEST
+  USER_CREATE
+  USER_UPDATE
+  USER_DELETE
+  SETTINGS_UPDATE
+  BACKUP_VERIFY
+  AGENT_REGISTER
+  AGENT_CONNECT
+  AGENT_DISCONNECT
+  AGENT_DELETE
+  AGENT_UPDATE
+}

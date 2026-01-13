@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rahat Backup Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.show {
+            display: block;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            margin-top: 20px;
+            background: #dc3545;
+        }
+
+        .logout-btn:hover {
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Form -->
+        <div id="loginScreen" class="login-screen">
+            <div class="logo">
+                <h1>🔐 Rahat Backup Agent</h1>
+                <p>Desktop Agent v1.0.0</p>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="backendUrl">Backend URL</label>
+                    <input type="text" id="backendUrl" value="http://localhost:3000" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+
+                <button type="submit" class="btn" id="loginBtn">Login</button>
+            </form>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="dashboard">
+            <div class="logo">
+                <h1>🔐 Rahat Backup Agent</h1>
+                <p>Desktop Agent v1.0.0 <span id="statusBadge" class="status-badge status-offline">Offline</span></p>
+            </div>
+
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">User:</span>
+                    <span class="info-value" id="userName">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Device:</span>
+                    <span class="info-value" id="deviceName">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Platform:</span>
+                    <span class="info-value" id="platform">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Agent ID:</span>
+                    <span class="info-value" id="agentId" style="font-size: 11px; word-break: break-all;">-</span>
+                </div>
+            </div>
+
+            <button class="btn logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const loginScreen = document.getElementById('loginScreen');
+        const dashboard = document.getElementById('dashboard');
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Info elements
+        const statusBadge = document.getElementById('statusBadge');
+        const userName = document.getElementById('userName');
+        const deviceName = document.getElementById('deviceName');
+        const platform = document.getElementById('platform');
+        const agentId = document.getElementById('agentId');
+
+        // Login form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const backendUrl = document.getElementById('backendUrl').value;
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+            errorMessage.classList.remove('show');
+
+            try {
+                const result = await window.electronAPI.login(email, password, backendUrl);
+
+                if (result.success) {
+                    // Show dashboard
+                    showDashboard();
+                    loadAgentInfo();
+                } else {
+                    showError(result.error || 'Login failed');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', async () => {
+            const result = await window.electronAPI.logout();
+            if (result.success) {
+                showLogin();
+            }
+        });
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        // Show dashboard
+        function showDashboard() {
+            loginScreen.style.display = 'none';
+            dashboard.classList.add('show');
+        }
+
+        // Show login
+        function showLogin() {
+            loginScreen.style.display = 'block';
+            dashboard.classList.remove('show');
+            errorMessage.classList.remove('show');
+        }
+
+        // Load agent info
+        async function loadAgentInfo() {
+            const result = await window.electronAPI.getAgentInfo();
+
+            if (result.success) {
+                const data = result.data;
+
+                userName.textContent = data.user?.name || '-';
+                deviceName.textContent = data.deviceName || '-';
+                platform.textContent = data.platform || '-';
+                agentId.textContent = data.agentId || '-';
+
+                updateStatus(data.status);
+            }
+        }
+
+        // Update status badge
+        function updateStatus(status) {
+            statusBadge.textContent = status === 'online' ? 'Online' : 'Offline';
+            statusBadge.className = `status-badge status-${status}`;
+        }
+
+        // Listen to WebSocket events
+        window.electronAPI.onConnected(() => {
+            console.log('WebSocket connected');
+            updateStatus('online');
+        });
+
+        window.electronAPI.onDisconnected(() => {
+            console.log('WebSocket disconnected');
+            updateStatus('offline');
+        });
+
+        window.electronAPI.onBackupStarted((data) => {
+            console.log('Backup started:', data);
+        });
+
+        window.electronAPI.onBackupCompleted((data) => {
+            console.log('Backup completed:', data);
+        });
+
+        window.electronAPI.onBackupFailed((data) => {
+            console.log('Backup failed:', data);
+        });
+
+        // Check if already logged in
+        (async () => {
+            const result = await window.electronAPI.getAgentInfo();
+            if (result.success && result.data.isAuthenticated) {
+                showDashboard();
+                loadAgentInfo();
+            }
+        })();
+    </script>
+</body>
+</html>

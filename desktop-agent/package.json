@@ -1,0 +1,106 @@
+{
+  "name": "rahat-backup-agent",
+  "version": "1.0.0",
+  "description": "Desktop agent for Rahat Backup System - handles local database backups",
+  "main": "electron/main.js",
+  "author": "Rahat Team",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "cross-env NODE_ENV=development electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.908.0",
+    "@aws-sdk/lib-storage": "^3.940.0",
+    "archiver": "^7.0.1",
+    "axios": "^1.7.2",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.3.1",
+    "googleapis": "^140.0.1",
+    "moment": "^2.29.4",
+    "mongodb": "^6.20.0",
+    "mssql": "^12.0.0",
+    "mysql2": "^3.15.1",
+    "node-machine-id": "^1.1.12",
+    "pg": "^8.16.3",
+    "socket.io-client": "^4.7.2",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.rahat.backup-agent",
+    "productName": "Rahat Backup Agent",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "agent-core/**/*",
+      "ui/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "!.env",
+      "!.env.*",
+      "!.auth.json",
+      "!.agent-id",
+      "!backups/**/*",
+      "!logs/**/*",
+      "!dist/**/*",
+      "!**/*.log",
+      "!**/*.db",
+      "!**/*.sqlite",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!node_modules/*.d.ts",
+      "!node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "asarUnpack": [
+      "node_modules/mssql/**/*",
+      "node_modules/tedious/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "verifyUpdateCodeSignature": false,
+      "signingHashAlgorithms": []
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "differentialPackage": false
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    }
+  }
+}

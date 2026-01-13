@@ -1,0 +1,4 @@
+
+> create-rahat-express-app@1.0.2 test
+> jest -i --colors --verbose --detectOpenHandles __tests__/unit/services/backup.service.test.js
+
