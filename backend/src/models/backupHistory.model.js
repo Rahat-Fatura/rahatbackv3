@@ -62,6 +62,20 @@ const backupHistoryModel = {
   },
 
   findByUserId: async (userId, filters = {}) => {
+    // Auto-fail backups that have been "running" for more than 3 hours
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    await prisma.backupHistory.updateMany({
+      where: {
+        database: { userId },
+        status: 'running',
+        startedAt: { lt: threeHoursAgo },
+      },
+      data: {
+        status: 'failed',
+        completedAt: new Date(),
+      },
+    });
+
     const where = {
       database: {
         userId,

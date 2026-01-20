@@ -37,9 +37,9 @@ const DatabaseList = () => {
     try {
       const result = await databaseApi.testConnection(id);
       if (result.success) {
-        Swal.fire('Başarılı', `Bağlantı başarılı: ${result.version}`, 'success');
+        Swal.fire('Başarılı', result.version ? `Bağlantı başarılı: ${result.version}` : 'Bağlantı başarılı', 'success');
       } else {
-        Swal.fire('Hata', `Bağlantı başarısız: ${result.message}`, 'error');
+        Swal.fire('Hata', result.message ? `Bağlantı başarısız: ${result.message}` : 'Bağlantı başarısız', 'error');
       }
     } catch (error) {
       Swal.fire('Hata', 'Bağlantı testi başarısız', 'error');

@@ -35,7 +35,6 @@ const defaultPorts = {
 };
 
 const DatabaseFormModal = ({ open, onClose, database, onSuccess }) => {
-  const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!database;
 
@@ -124,24 +123,6 @@ const DatabaseFormModal = ({ open, onClose, database, onSuccess }) => {
       Swal.fire('Hata', error.response?.data?.message || 'İşlem başarısız', 'error');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleTestConnection = async () => {
-    setTesting(true);
-    try {
-      const formData = watch();
-      const result = await databaseApi.testConnectionWithCredentials(formData);
-
-      if (result.success) {
-        Swal.fire('Başarılı', `Bağlantı başarılı!\n\nVersiyon: ${result.version}`, 'success');
-      } else {
-        Swal.fire('Hata', `Bağlantı başarısız:\n${result.message}`, 'error');
-      }
-    } catch (error) {
-      Swal.fire('Hata', error.response?.data?.message || 'Bağlantı testi başarısız', 'error');
-    } finally {
-      setTesting(false);
     }
   };
 
@@ -307,9 +288,6 @@ const DatabaseFormModal = ({ open, onClose, database, onSuccess }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleTestConnection} disabled={testing || saving}>
-            {testing ? <CircularProgress size={20} /> : 'Bağlantıyı Test Et'}
-          </Button>
           <Button onClick={onClose} disabled={saving}>
             İptal
           </Button>

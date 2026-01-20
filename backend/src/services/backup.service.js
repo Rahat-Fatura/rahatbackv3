@@ -16,9 +16,6 @@ const { encryptFile, decryptFile, hashPassword } = require('../utils/encryption'
 // Backup storage directory
 const BACKUP_STORAGE_PATH = process.env.BACKUP_STORAGE_PATH || path.join(__dirname, '../../backups');
 
-// Track running backups to prevent concurrent execution
-const runningBackups = new Set();
-
 /**
  * Send email notification for backup status
  */
@@ -212,19 +209,23 @@ const deleteBackupJob = async (id, userId) => {
  * Execute a backup
  */
 const executeBackup = async (backupJobId) => {
-  // Prevent concurrent execution of the same backup job
-  if (runningBackups.has(backupJobId)) {
-    logger.warn(`Backup job ${backupJobId} is already running, skipping...`);
-    throw new ApiError(httpStatus.CONFLICT, 'Backup is already running for this job');
-  }
-
   const backupJob = await backupJobModel.findById(backupJobId);
   if (!backupJob) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Backup job not found');
   }
 
-  // Mark as running
-  runningBackups.add(backupJobId);
+  // Check if there's already a running backup for this job (database-based check)
+  const runningBackup = await prisma.backupHistory.findFirst({
+    where: {
+      backupJobId: parseInt(backupJobId),
+      status: 'running',
+    },
+  });
+
+  if (runningBackup) {
+    logger.warn(`Backup job ${backupJobId} is already running, skipping...`);
+    throw new ApiError(httpStatus.CONFLICT, 'Bu job için zaten çalışan bir backup var');
+  }
 
   // Get database config with decrypted password
   const dbConfig = await databaseService.getDatabaseConfig(backupJob.databaseId);
@@ -240,7 +241,6 @@ const executeBackup = async (backupJobId) => {
       });
 
       if (!agent) {
-        runningBackups.delete(backupJobId);
         throw new ApiError(httpStatus.NOT_FOUND, `Agent with ID ${dbConfig.agentId} not found`);
       }
 
@@ -276,6 +276,7 @@ const executeBackup = async (backupJobId) => {
           port: dbConfig.port,
           username: dbConfig.username,
           password: dbConfig.password,
+          database: dbConfig.database,
         },
         backupType: backupJob.backupType || 'full',
         compression: backupJob.compression || false,
@@ -309,7 +310,6 @@ const executeBackup = async (backupJobId) => {
 
       if (!sent) {
         // Agent is not connected
-        runningBackups.delete(backupJobId);
         throw new ApiError(httpStatus.SERVICE_UNAVAILABLE, `Agent ${agent.agentId} (${agent.deviceName}) is not connected. Please make sure the desktop agent is running.`);
       }
 
@@ -324,7 +324,6 @@ const executeBackup = async (backupJobId) => {
         agentDevice: agent.deviceName,
       };
     } catch (error) {
-      runningBackups.delete(backupJobId);
       logger.error(`Failed to send job to agent: ${error.message}`);
       throw error;
     }
@@ -332,7 +331,6 @@ const executeBackup = async (backupJobId) => {
 
   // NO AGENT = NO BACKUP
   // Database is on localhost (agent's PC), backend cannot access it
-  runningBackups.delete(backupJobId);
   logger.error(`Database ${dbConfig.name} has no agent configured. Backup requires an active agent.`);
   throw new ApiError(
     httpStatus.BAD_REQUEST,
@@ -1332,9 +1330,6 @@ const handleAgentBackupCompleted = async (jobId, result) => {
   try {
     logger.info(`Agent backup completed for job ${jobId}:`, result);
 
-    // Remove from running backups
-    runningBackups.delete(jobId);
-
     // Find the backup history entry (most recent one with this jobId)
     const backupHistory = await prisma.backupHistory.findFirst({
       where: { backupJobId: parseInt(jobId) },
@@ -1388,9 +1383,6 @@ const handleAgentBackupCompleted = async (jobId, result) => {
 const handleAgentBackupFailed = async (jobId, errorMessage) => {
   try {
     logger.error(`Agent backup failed for job ${jobId}: ${errorMessage}`);
-
-    // Remove from running backups
-    runningBackups.delete(jobId);
 
     // Find the backup history entry
     const backupHistory = await prisma.backupHistory.findFirst({

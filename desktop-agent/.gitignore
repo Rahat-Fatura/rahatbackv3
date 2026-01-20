@@ -4,6 +4,7 @@ backups/
 logs/
 .env
 *.log
+.auth.json
 
 # SQLite database
 *.db

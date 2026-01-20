@@ -255,16 +255,16 @@ async function executeBackupJob(jobData, wsClient) {
  * @returns {Promise<Object>} - Upload result
  */
 async function executeStreamingBackup(database, jobId, storage, wsClient, isEncrypted = false, encryptionPasswordHash = null) {
-  const { host, port, username, password, name, type } = database;
+  const { host, port, username, password, name, type, database: dbName } = database;
   const { accessKeyId, secretAccessKey, region, bucket, path: s3Path } = storage;
 
-  // Database configuration
+  // Database configuration (use actual database name, fallback to connection name)
   const dbConfig = {
     host,
     port,
     username,
     password,
-    database: name,
+    database: dbName || name,
   };
 
   wsClient.sendBackupProgress(jobId, {
@@ -450,7 +450,7 @@ async function executeStreamingBackup(database, jobId, storage, wsClient, isEncr
  * @returns {Promise<string>} - Backup file path
  */
 async function createDatabaseBackup(database, jobId) {
-  const { type, host, port, username, password, name } = database;
+  const { type, host, port, username, password, name, database: dbName } = database;
 
   // Create backup directory
   const backupDir = path.join(config.backupStoragePath, `job_${jobId}`);
@@ -458,18 +458,18 @@ async function createDatabaseBackup(database, jobId) {
     fs.mkdirSync(backupDir, { recursive: true });
   }
 
-  // Generate backup filename
+  // Generate backup filename (use connection name for file naming)
   const timestamp = new Date().toISOString().replace(/:/g, '-');
   const filename = `${name}_${timestamp}.sql`;
   const outputPath = path.join(backupDir, filename);
 
-  // Database configuration
+  // Database configuration (use actual database name, fallback to connection name)
   const dbConfig = {
     host,
     port,
     username,
     password,
-    database: name,
+    database: dbName || name,
   };
 
   // Execute backup based on database type
