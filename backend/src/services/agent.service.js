@@ -112,7 +112,15 @@ const getAgentById = async (id, userId) => {
  * @returns {Promise<Array>}
  */
 const getUserAgents = async (userId, filters = {}) => {
-  return await agentModel.findByUserId(userId, filters);
+  const agents = await agentModel.findByUserId(userId, filters);
+
+  // If filtering by online status, verify with actual WebSocket connection
+  if (filters.status === 'online') {
+    const { websocketService } = require('./index');
+    return agents.filter((agent) => websocketService.isAgentOnline(agent.agentId));
+  }
+
+  return agents;
 };
 
 /**

@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import * as databaseApi from '../../api/database';
+import * as agentApi from '../../api/agent';
 import DatabaseFormModal from './DatabaseFormModal';
 import BackupJobFormModal from './BackupJobFormModal';
 
@@ -77,6 +78,24 @@ const DatabaseList = () => {
   const handleCreateBackup = (database) => {
     setSelectedDatabaseForBackup(database);
     setBackupJobModalOpen(true);
+  };
+
+  const handleAddDatabase = async () => {
+    // Check if there's an online agent before opening the form
+    const hasAgent = await agentApi.hasOnlineAgent();
+
+    if (!hasAgent) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Agent Bulunamadı',
+        text: 'Veritabanı eklemek için önce desktop agent uygulamasını başlatmanız gerekiyor.',
+        confirmButtonText: 'Tamam',
+      });
+      return;
+    }
+
+    setSelectedDatabase(null);
+    setModalOpen(true);
   };
 
   const columnDefs = useMemo(() => [
@@ -221,10 +240,7 @@ const DatabaseList = () => {
           <Button
             variant="contained"
             startIcon={<Plus size={18} />}
-            onClick={() => {
-              setSelectedDatabase(null);
-              setModalOpen(true);
-            }}
+            onClick={handleAddDatabase}
           >
             Yeni Bağlantı
           </Button>

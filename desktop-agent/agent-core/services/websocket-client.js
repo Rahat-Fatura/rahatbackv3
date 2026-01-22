@@ -1,11 +1,16 @@
 const { io } = require('socket.io-client');
 const EventEmitter = require('events');
+const fs = require('fs');
+const path = require('path');
 const logger = require('../config/logger');
 const config = require('../config/config');
 const authService = require('./auth.service');
 const backupExecutor = require('./backup-executor');
 const restoreExecutor = require('./restore-executor');
 const verificationExecutor = require('./verification-executor');
+
+// Path for persisting active jobs (survives agent restart)
+const ACTIVE_JOBS_FILE = path.join(config.backupStoragePath || '.', 'active-jobs.json');
 
 class WebSocketClient extends EventEmitter {
   constructor() {
@@ -15,6 +20,11 @@ class WebSocketClient extends EventEmitter {
     this.reconnectAttempts = 0;
     this.heartbeatInterval = null;
     this.pendingEvents = []; // Queue for events when backend is offline
+    this.activeJobs = new Map(); // Track running jobs: jobId -> { startTime, databaseName }
+    this.hasIncompleteJobsFromFile = false; // Flag: were there jobs left from previous crash?
+
+    // Load incomplete jobs from previous session (if agent crashed)
+    this.loadActiveJobsFromFile();
   }
 
   /**
@@ -76,6 +86,12 @@ class WebSocketClient extends EventEmitter {
 
       // Start heartbeat
       this.startHeartbeat();
+
+      // Report incomplete jobs from previous crash (only if loaded from file)
+      if (this.hasIncompleteJobsFromFile) {
+        this.reportIncompleteJobs();
+        this.hasIncompleteJobsFromFile = false;
+      }
 
       // Process pending events after reconnect
       this.processPendingEvents();
@@ -289,6 +305,98 @@ class WebSocketClient extends EventEmitter {
 
     // Try to send immediately if connected
     this.processPendingEvents();
+  }
+
+  /**
+   * Load active jobs from file (called on agent startup)
+   */
+  loadActiveJobsFromFile() {
+    try {
+      if (fs.existsSync(ACTIVE_JOBS_FILE)) {
+        const data = JSON.parse(fs.readFileSync(ACTIVE_JOBS_FILE, 'utf8'));
+        if (data && Object.keys(data).length > 0) {
+          // Convert object to Map
+          for (const [jobId, jobInfo] of Object.entries(data)) {
+            this.activeJobs.set(parseInt(jobId), jobInfo);
+          }
+          this.hasIncompleteJobsFromFile = true;
+          logger.warn(`Loaded ${this.activeJobs.size} incomplete job(s) from previous session`);
+        }
+      }
+    } catch (error) {
+      logger.error(`Failed to load active jobs from file: ${error.message}`);
+    }
+  }
+
+  /**
+   * Save active jobs to file
+   */
+  saveActiveJobsToFile() {
+    try {
+      // Ensure directory exists
+      const dir = path.dirname(ACTIVE_JOBS_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      const data = Object.fromEntries(this.activeJobs);
+      fs.writeFileSync(ACTIVE_JOBS_FILE, JSON.stringify(data, null, 2));
+    } catch (error) {
+      logger.error(`Failed to save active jobs to file: ${error.message}`);
+    }
+  }
+
+  /**
+   * Add job to active jobs list
+   * @param {number} jobId
+   * @param {string} databaseName
+   */
+  addActiveJob(jobId, databaseName) {
+    this.activeJobs.set(jobId, {
+      startTime: Date.now(),
+      databaseName,
+    });
+    this.saveActiveJobsToFile();
+    logger.info(`Job ${jobId} added to active jobs (${this.activeJobs.size} active)`);
+  }
+
+  /**
+   * Remove job from active jobs list
+   * @param {number} jobId
+   */
+  removeActiveJob(jobId) {
+    if (this.activeJobs.has(jobId)) {
+      this.activeJobs.delete(jobId);
+      this.saveActiveJobsToFile();
+      logger.info(`Job ${jobId} removed from active jobs (${this.activeJobs.size} active)`);
+    }
+  }
+
+  /**
+   * Report incomplete jobs as failed
+   * Called only when jobs were loaded from file (agent crashed during backup)
+   */
+  reportIncompleteJobs() {
+    if (this.activeJobs.size === 0) {
+      return;
+    }
+
+    logger.warn(`Found ${this.activeJobs.size} incomplete job(s) from previous crash, reporting as failed...`);
+
+    for (const [jobId, jobInfo] of this.activeJobs) {
+      const duration = Date.now() - jobInfo.startTime;
+      const durationMin = (duration / 60000).toFixed(1);
+
+      logger.error(`Job ${jobId} (${jobInfo.databaseName}) was interrupted after ${durationMin} minutes`);
+
+      // Send failed event
+      this.sendBackupFailed(jobId, `Backup yarıda kesildi (agent kapandı veya çöktü). Süre: ${durationMin} dakika`);
+    }
+
+    // Clear active jobs and file after reporting
+    this.activeJobs.clear();
+    this.saveActiveJobsToFile();
+    logger.info('All incomplete jobs reported as failed');
   }
 
   /**

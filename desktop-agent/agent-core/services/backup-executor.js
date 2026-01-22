@@ -29,6 +29,9 @@ async function executeBackupJob(jobData, wsClient) {
   logger.info(`Starting backup job ${jobId} for database ${database.name} (${database.type})`);
   logger.info(`🔐 Encryption settings - isEncrypted: ${isEncrypted}, hasPasswordHash: ${!!encryptionPasswordHash}`);
 
+  // Track this job as active (for incomplete job detection on reconnect)
+  wsClient.addActiveJob(jobId, database.name);
+
   const startTime = Date.now();
   let backupFilePath = null;
   let compressedFilePath = null;
@@ -72,6 +75,9 @@ async function executeBackupJob(jobData, wsClient) {
         duration,
         timestamp: new Date(),
       });
+
+      // Remove from active jobs
+      wsClient.removeActiveJob(jobId);
 
       logger.info(`Streaming backup job ${jobId} completed successfully in ${duration}ms`);
       return;
@@ -228,9 +234,15 @@ async function executeBackupJob(jobData, wsClient) {
       timestamp: new Date(),
     });
 
+    // Remove from active jobs
+    wsClient.removeActiveJob(jobId);
+
     logger.info(`Backup job ${jobId} completed successfully in ${duration}ms`);
   } catch (error) {
     logger.error(`Backup job ${jobId} failed:`, error);
+
+    // Remove from active jobs
+    wsClient.removeActiveJob(jobId);
 
     // Cleanup on error
     try {

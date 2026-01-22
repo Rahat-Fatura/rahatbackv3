@@ -234,6 +234,7 @@ const executeBackup = async (backupJobId) => {
   if (dbConfig.agentId) {
     logger.info(`Database ${dbConfig.name} is linked to agent ${dbConfig.agentId}, sending job to agent...`);
 
+    let backupHistory = null;
     try {
       // Get agent details (need UUID for WebSocket)
       const agent = await prisma.agent.findUnique({
@@ -246,7 +247,30 @@ const executeBackup = async (backupJobId) => {
 
       logger.info(`Agent found: ${agent.agentId} (${agent.deviceName}) - Status: ${agent.status}`);
 
-      // Create backup history entry before sending to agent
+      // Check if agent is actually connected via WebSocket BEFORE creating history
+      const { websocketService } = require('./index');
+      if (!websocketService.isAgentOnline(agent.agentId)) {
+        // Agent not connected - create "skipped" history so user knows what happened
+        logger.warn(`Backup job ${backupJobId} skipped - agent ${agent.agentId} (${agent.deviceName}) is not connected`);
+
+        await backupHistoryModel.create({
+          backupJobId: parseInt(backupJobId),
+          databaseId: parseInt(backupJob.databaseId),
+          status: 'skipped',
+          fileName: '',
+          filePath: '',
+          completedAt: new Date(),
+          errorMessage: 'Agent bağlı değildi, backup atlandı. Bir sonraki zamanlamada tekrar denenecek.',
+        });
+
+        return {
+          success: false,
+          status: 'skipped',
+          message: 'Agent bağlı değil, backup atlandı.',
+        };
+      }
+
+      // Agent is connected - create "running" history entry
       const historyData = {
         backupJobId: parseInt(backupJobId),
         databaseId: parseInt(backupJob.databaseId),
@@ -255,7 +279,7 @@ const executeBackup = async (backupJobId) => {
         filePath: '',
       };
       logger.info(`Creating backup history for job ${backupJobId}`, historyData);
-      await backupHistoryModel.create(historyData);
+      backupHistory = await backupHistoryModel.create(historyData);
 
       // Get cloud storage config if configured
       // Note: cloudStorageModel.findById() automatically decrypts S3 credentials
@@ -305,11 +329,15 @@ const executeBackup = async (backupJobId) => {
       logger.info(`Sending job to agent - isEncrypted: ${jobData.isEncrypted}, hasPasswordHash: ${!!jobData.encryptionPasswordHash}`);
 
       // Send job to agent via WebSocket (use agent UUID, not DB ID)
-      const { websocketService } = require('./index');
       const sent = await websocketService.sendJobToAgent(agent.agentId, jobData);
 
       if (!sent) {
-        // Agent is not connected
+        // Agent is not connected - mark backup as failed
+        await backupHistoryModel.update(backupHistory.id, {
+          status: 'failed',
+          completedAt: new Date(),
+          errorMessage: 'Agent bağlı değil. Desktop agent uygulamasının çalıştığından emin olun.',
+        });
         throw new ApiError(httpStatus.SERVICE_UNAVAILABLE, `Agent ${agent.agentId} (${agent.deviceName}) is not connected. Please make sure the desktop agent is running.`);
       }
 
@@ -325,6 +353,14 @@ const executeBackup = async (backupJobId) => {
       };
     } catch (error) {
       logger.error(`Failed to send job to agent: ${error.message}`);
+      // If backup history was created, mark it as failed
+      if (backupHistory) {
+        await backupHistoryModel.update(backupHistory.id, {
+          status: 'failed',
+          completedAt: new Date(),
+          errorMessage: error.message || 'Backup işlemi başlatılamadı',
+        });
+      }
       throw error;
     }
   }

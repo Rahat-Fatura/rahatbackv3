@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

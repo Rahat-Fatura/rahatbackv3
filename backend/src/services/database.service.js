@@ -39,19 +39,28 @@ const createDatabase = async (userId, databaseData) => {
   // Encrypt password before storing
   const encryptedPassword = encryptPassword(databaseData.password);
 
-  // SQLBackupAndFTP Logic: Auto-assign to user's active agent
-  // If no agentId provided, find the first online agent for this user
+  // Auto-assign to user's active agent
+  // Agent MUST be online (real WebSocket connection) to add a database
   let agentId = databaseData.agentId;
 
   if (!agentId) {
     const { agentModel } = require('../models');
-    const onlineAgent = await agentModel.findFirstOnlineByUserId(userId);
+    const { websocketService } = require('./index');
+
+    // Get user's agents from DB
+    const userAgents = await agentModel.findByUserId(userId, { isActive: true });
+
+    // Find one that's actually connected via WebSocket
+    const onlineAgent = userAgents.find((agent) => websocketService.isAgentOnline(agent.agentId));
 
     if (onlineAgent) {
       agentId = onlineAgent.id;
       console.log(`Auto-assigned database to agent: ${onlineAgent.deviceName} (ID: ${agentId})`);
     } else {
-      console.log('No online agent found - database will use cloud backup mode');
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Aktif bir agent bulunamadı. Lütfen önce desktop agent uygulamasını başlatın.'
+      );
     }
   }
 

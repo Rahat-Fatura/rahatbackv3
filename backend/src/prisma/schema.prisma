@@ -276,6 +276,7 @@ enum BackupStatus {
   success
   failed
   cancelled
+  skipped
 }
 
 enum RestoreStatus {

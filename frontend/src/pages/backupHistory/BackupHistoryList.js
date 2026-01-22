@@ -445,11 +445,13 @@ const BackupHistoryList = () => {
             success: 'success',
             failed: 'error',
             running: 'warning',
+            skipped: 'default',
           };
           const statusLabels = {
             success: 'Başarılı',
             failed: 'Hata',
             running: 'Çalışıyor',
+            skipped: 'Atlandı',
           };
           return (
             <Chip
@@ -620,6 +622,7 @@ const BackupHistoryList = () => {
             <MenuItem value="success">Başarılı</MenuItem>
             <MenuItem value="failed">Hata</MenuItem>
             <MenuItem value="running">Çalışıyor</MenuItem>
+            <MenuItem value="skipped">Atlandı</MenuItem>
           </Select>
         </FormControl>
       </Box>

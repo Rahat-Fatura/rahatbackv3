@@ -165,7 +165,7 @@ const getBackupJobs = {
 
 const getBackupHistory = {
   query: Joi.object().keys({
-    status: Joi.string().valid('running', 'success', 'failed', 'cancelled').allow('').optional(),
+    status: Joi.string().valid('running', 'success', 'failed', 'cancelled', 'skipped').allow('').optional(),
     databaseId: Joi.number().integer().allow('').optional(),
     backupJobId: Joi.number().integer().allow('').optional(),
     page: Joi.number().integer().min(1).default(1),
