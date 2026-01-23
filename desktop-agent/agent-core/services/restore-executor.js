@@ -317,7 +317,10 @@ async function decompressFile(compressedFilePath, progressCallback) {
  * @returns {Promise<void>}
  */
 async function restoreToDatabase(database, backupFilePath) {
-  const { type, host, port, username, password, name } = database;
+  const { type, host, port, username, password, name, database: dbName } = database;
+
+  // Use actual database name if available, fallback to connection name for backward compatibility
+  const actualDatabaseName = dbName || name;
 
   // Database configuration
   const dbConfig = {
@@ -325,7 +328,7 @@ async function restoreToDatabase(database, backupFilePath) {
     port,
     username,
     password,
-    database: name,
+    database: actualDatabaseName,
   };
 
   // Execute restore based on database type
@@ -334,25 +337,25 @@ async function restoreToDatabase(database, backupFilePath) {
   switch (type.toLowerCase()) {
     case 'postgresql':
     case 'postgres':
-      logger.info(`Restoring PostgreSQL database: ${name}`);
+      logger.info(`Restoring PostgreSQL database: ${actualDatabaseName} (connection: ${name})`);
       result = await postgresqlConnector.restoreBackup(dbConfig, backupFilePath);
       break;
 
     case 'mysql':
     case 'mariadb':
-      logger.info(`Restoring MySQL database: ${name}`);
+      logger.info(`Restoring MySQL database: ${actualDatabaseName} (connection: ${name})`);
       result = await mysqlConnector.restoreBackup(dbConfig, backupFilePath);
       break;
 
     case 'mongodb':
     case 'mongo':
-      logger.info(`Restoring MongoDB database: ${name}`);
+      logger.info(`Restoring MongoDB database: ${actualDatabaseName} (connection: ${name})`);
       result = await mongodbConnector.restoreBackup(dbConfig, backupFilePath);
       break;
 
     case 'mssql':
     case 'sqlserver':
-      logger.info(`Restoring MSSQL database: ${name}`);
+      logger.info(`Restoring MSSQL database: ${actualDatabaseName} (connection: ${name})`);
       result = await mssqlConnector.restoreBackup(dbConfig, backupFilePath);
       break;
 
@@ -364,7 +367,7 @@ async function restoreToDatabase(database, backupFilePath) {
     throw new Error(result.error || 'Database restore failed');
   }
 
-  logger.info(`Database restored successfully: ${name}`);
+  logger.info(`Database restored successfully: ${actualDatabaseName}`);
 }
 
 /**

@@ -140,11 +140,21 @@ const BackupJobsList = () => {
     },
     {
       headerName: 'Veritabanı',
-      field: 'database.name',
+      field: 'database.database',
       filter: true,
       flex: 1,
-      minWidth: 150,
-      valueGetter: (params) => params.data?.database?.name || 'N/A',
+      minWidth: 180,
+      valueGetter: (params) => {
+        const db = params.data?.database;
+        if (!db) return 'N/A';
+        // Show actual database name, with connection name in parentheses if different
+        const actualDb = db.database || db.name;
+        const connectionName = db.name;
+        if (actualDb !== connectionName) {
+          return `${actualDb} (${connectionName})`;
+        }
+        return actualDb;
+      },
     },
     {
       headerName: 'Tip',

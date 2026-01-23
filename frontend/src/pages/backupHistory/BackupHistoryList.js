@@ -399,10 +399,19 @@ const BackupHistoryList = () => {
       },
       {
         headerName: 'Veritabanı',
-        field: 'database.name',
+        field: 'database.database',
         filter: true,
-        width: 150,
-        valueGetter: (params) => params.data?.database?.name || 'N/A',
+        width: 180,
+        valueGetter: (params) => {
+          const db = params.data?.database;
+          if (!db) return 'N/A';
+          const actualDb = db.database || db.name;
+          const connectionName = db.name;
+          if (actualDb !== connectionName) {
+            return `${actualDb} (${connectionName})`;
+          }
+          return actualDb;
+        },
       },
       {
         headerName: 'Tip',

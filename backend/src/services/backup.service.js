@@ -661,6 +661,7 @@ const restoreBackup = async (historyId, userId) => {
         database: {
           id: dbConfig.id,
           name: dbConfig.name,
+          database: dbConfig.database, // Actual database name (may differ from connection name)
           type: dbConfig.type,
           host: dbConfig.host,
           port: dbConfig.port,

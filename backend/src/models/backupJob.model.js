@@ -11,6 +11,7 @@ const backupJobModel = {
           select: {
             id: true,
             name: true,
+            database: true,
             type: true,
           },
         },
@@ -60,6 +61,7 @@ const backupJobModel = {
           select: {
             id: true,
             name: true,
+            database: true,
             type: true,
             host: true,
           },

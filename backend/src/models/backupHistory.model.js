@@ -14,6 +14,7 @@ const backupHistoryModel = {
           select: {
             id: true,
             name: true,
+            database: true,
             type: true,
           },
         },
@@ -105,6 +106,7 @@ const backupHistoryModel = {
             select: {
               id: true,
               name: true,
+              database: true,
               type: true,
             },
           },
@@ -250,6 +252,7 @@ const backupHistoryModel = {
           select: {
             id: true,
             name: true,
+            database: true,
             type: true,
           },
         },
