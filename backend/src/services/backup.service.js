@@ -260,8 +260,21 @@ const executeBackup = async (backupJobId) => {
           fileName: '',
           filePath: '',
           completedAt: new Date(),
-          errorMessage: 'Agent bağlı değildi, backup atlandı. Bir sonraki zamanlamada tekrar denenecek.',
+          errorMessage: 'Agent bağlı değildi, backup atlandı.',
         });
+
+        // Update nextRunAt to next scheduled time (skip this run, don't retry when agent connects)
+        const scheduleService = require('./schedule.service');
+        const nextRunAt = scheduleService.getNextRunTime(
+          backupJob.scheduleType,
+          backupJob.cronExpression,
+          backupJob.advancedScheduleConfig,
+          new Date() // Calculate from now - ensures we skip to next scheduled time
+        );
+        if (nextRunAt) {
+          await backupJobModel.update(backupJobId, { nextRunAt });
+          logger.info(`Skipped job ${backupJobId}, next run scheduled for: ${nextRunAt.toISOString()}`);
+        }
 
         return {
           success: false,

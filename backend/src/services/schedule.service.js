@@ -121,8 +121,8 @@ const startScheduledJob = async (backupJob) => {
 
       activeCronJobs.set(backupJob.id, task);
 
-      // Calculate and update next run time
-      const nextRunAt = advancedSchedule.getNextRunTime(config, backupJob.lastRunAt ? new Date(backupJob.lastRunAt) : new Date());
+      // Calculate and update next run time (always from now for consistency)
+      const nextRunAt = advancedSchedule.getNextRunTime(config, new Date());
       if (nextRunAt) {
         await backupJobModel.update(backupJob.id, { nextRunAt });
         logger.info(`Next run for advanced job ${backupJob.id}: ${nextRunAt.toISOString()}`);
@@ -160,8 +160,8 @@ const startScheduledJob = async (backupJob) => {
 
   activeCronJobs.set(backupJob.id, task);
 
-  // Update next run time in database
-  const nextRunAt = getNextRunTime(backupJob.scheduleType, backupJob.cronExpression, backupJob.advancedScheduleConfig, backupJob.lastRunAt);
+  // Update next run time in database (always from now for consistency)
+  const nextRunAt = getNextRunTime(backupJob.scheduleType, backupJob.cronExpression, backupJob.advancedScheduleConfig, null);
   if (nextRunAt) {
     await backupJobModel.update(backupJob.id, { nextRunAt });
   }
