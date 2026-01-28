@@ -40,7 +40,7 @@ const DatabaseList = () => {
       if (result.success) {
         Swal.fire('Başarılı', result.version ? `Bağlantı başarılı: ${result.version}` : 'Bağlantı başarılı', 'success');
       } else {
-        Swal.fire('Hata', result.message ? `Bağlantı başarısız: ${result.message}` : 'Bağlantı başarısız', 'error');
+        Swal.fire('Hata', 'Bağlantı başarısız!', 'error');
       }
     } catch (error) {
       Swal.fire('Hata', 'Bağlantı testi başarısız', 'error');
