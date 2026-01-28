@@ -565,7 +565,7 @@ const BackupHistoryList = () => {
               >
                 <RotateCcw size={16} />
               </Button>
-              <Button
+              {/* <Button
                 size="small"
                 variant="outlined"
                 color="primary"
@@ -574,7 +574,7 @@ const BackupHistoryList = () => {
                 disabled={!isSuccess}
               >
                 <Download size={16} />
-              </Button>
+              </Button> */}
               <Button
                 size="small"
                 variant="outlined"
