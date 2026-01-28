@@ -63,7 +63,7 @@ class WebSocketClient extends EventEmitter {
       reconnectionDelay: config.reconnectDelay, // Initial delay: 5 seconds
       reconnectionDelayMax: 60000, // Max delay: 60 seconds (exponential backoff)
       reconnectionAttempts: config.maxReconnectAttempts, // Infinity = never give up!
-      transports: ['polling'], // Prefer WebSocket, fallback to polling
+      transports: ['websocket'], // Prefer WebSocket, fallback to polling
       upgrade: true,
       rememberUpgrade: true,
       forceNew: false, // Reuse existing connection if possible
