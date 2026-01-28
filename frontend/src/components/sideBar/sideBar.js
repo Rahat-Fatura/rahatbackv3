@@ -51,42 +51,42 @@ const menuItems = [
   { text: "Backup Jobs", icon: <Calendar size={22} />, path: "/backup-jobs" },
   { text: "Yedekleme Geçmişi", icon: <ListIcon size={22} />, path: "/backup-history" },
   { text: "Email Bildirimleri", icon: <Bell size={22} />, path: "/notifications" },
-  { text: "GridPage", icon: <Files size={22} />, path: "/user/gridPage" },
-  {
-    text: "Components",
-    icon: <SettingsInputComponentSharp size={22} />,
-    path: "/user/components",
-  },
-  { text: "Alt Programlar", header: true },
-  {
-    text: "Rahat Fatura",
-    icon: <ShoppingCart size={22} />,
-    subItems: [
-      {
-        text: "paneladmin",
-        icon: <ShoppingCart size={22} />,
-        path: "/user/sssss",
-      },
-      { text: "Add", icon: <ShoppingCart size={22} /> },
-      {
-        text: "Category",
-        icon: <ShoppingCart size={22} />,
-      },
-    ],
-  },
-  {
-    text: "Rahat Dinle",
-    icon: <Mail size={22} />,
-    subItems: [
-      { text: "Page1", icon: <Mail size={22} />, path: "/products/list" },
-      { text: "Page2", icon: <Mail size={22} />, path: "/products/add" },
-      { text: "Page3", icon: <Mail size={22} />, path: "/products/category" },
-    ],
-  },
-  { text: "LandingPage", icon: <MessageCircle size={22} />, path: "/" },
-  { text: "Takvim", icon: <Calendar size={22} /> },
-  { text: "Belgeler", icon: <User size={22} /> },
-  { text: "Yetkilendirmeler", icon: <Key size={22} /> },
+  // { text: "GridPage", icon: <Files size={22} />, path: "/user/gridPage" },
+  // {
+  //   text: "Components",
+  //   icon: <SettingsInputComponentSharp size={22} />,
+  //   path: "/user/components",
+  // },
+  // { text: "Alt Programlar", header: true },
+  // {
+  //   text: "Rahat Fatura",
+  //   icon: <ShoppingCart size={22} />,
+  //   subItems: [
+  //     {
+  //       text: "paneladmin",
+  //       icon: <ShoppingCart size={22} />,
+  //       path: "/user/sssss",
+  //     },
+  //     { text: "Add", icon: <ShoppingCart size={22} /> },
+  //     {
+  //       text: "Category",
+  //       icon: <ShoppingCart size={22} />,
+  //     },
+  //   ],
+  // },
+  // {
+  //   text: "Rahat Dinle",
+  //   icon: <Mail size={22} />,
+  //   subItems: [
+  //     { text: "Page1", icon: <Mail size={22} />, path: "/products/list" },
+  //     { text: "Page2", icon: <Mail size={22} />, path: "/products/add" },
+  //     { text: "Page3", icon: <Mail size={22} />, path: "/products/category" },
+  //   ],
+  // },
+  // { text: "LandingPage", icon: <MessageCircle size={22} />, path: "/" },
+  // { text: "Takvim", icon: <Calendar size={22} /> },
+  // { text: "Belgeler", icon: <User size={22} /> },
+  // { text: "Yetkilendirmeler", icon: <Key size={22} /> },
   {
     text: "Çıkış",
     icon: <LogoutOutlinedIcon size={22} />,
